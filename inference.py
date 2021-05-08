@@ -37,6 +37,9 @@ def main(args):
     save_folder = args.outputDir
     if not os.path.exists(save_folder):
         os.mkdir(save_folder)
+    save_image_folder = os.path.join(save_folder, 'images')
+    if not os.path.exists(save_image_folder):
+        os.mkdir(save_image_folder)
 
     types = ('*.jpg', '*.png')
     image_path_list = []
@@ -125,9 +128,9 @@ def main(args):
         if args.isShow:
             # ---------- Plot
             image_pose = plot_pose_box(image, camera_matrix, kpt)
-            cv2.imshow('sparse alignment', plot_kpt(image, kpt))
-            cv2.imshow('dense alignment', plot_vertices(image, vertices))
-            cv2.imshow('pose', plot_pose_box(image, camera_matrix, kpt))
+            cv2.imwrite(os.path.join(save_image_folder, name + '_sparse alignment.jpg'), plot_kpt(image, kpt))
+            cv2.imwrite(os.path.join(save_image_folder, name + '_dense alignment.jpg'), plot_vertices(image, vertices))
+            cv2.imwrite(os.path.join(save_image_folder, name + '_pose.jpg'), plot_pose_box(image, camera_matrix, kpt))
             cv2.waitKey(0)
 
 

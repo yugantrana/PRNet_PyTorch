@@ -105,19 +105,21 @@ def main(data_dir):
             bar.set_description(" {} [Loss(Paper)] {} [SSIM({})] {}".format(ep, Loss_list[-1], FLAGS["gauss_kernel"], Stat_list[-1]))
 
             # Record Training information in Tensorboard.
-            if origin_img is None and uv_map_gt is None:
-                origin_img, uv_map_gt = origin, uv_map
-            uv_map_predicted = uv_map_result
+            summary_step = ep*len(bar) + i;
+            writer.add_scalar("Original Loss", Loss_list[-1], summary_step)
+            writer.add_scalar("SSIM Loss", Stat_list[-1], summary_step)
 
-            writer.add_scalar("Original Loss", Loss_list[-1], FLAGS["summary_step"])
-            writer.add_scalar("SSIM Loss", Stat_list[-1], FLAGS["summary_step"])
+        # Per epoch records.
+        if origin_img is None and uv_map_gt is None:
+            origin_img, uv_map_gt = origin, uv_map
+        uv_map_predicted = uv_map_result
 
-            grid_1, grid_2, grid_3 = make_grid(origin_img, normalize=True), make_grid(uv_map_gt), make_grid(uv_map_predicted)
+        grid_1, grid_2, grid_3 = make_grid(origin_img, normalize=True), make_grid(uv_map_gt), make_grid(uv_map_predicted)
 
-            writer.add_image('original', grid_1, FLAGS["summary_step"])
-            writer.add_image('gt_uv_map', grid_2, FLAGS["summary_step"])
-            writer.add_image('predicted_uv_map', grid_3, FLAGS["summary_step"])
-            writer.add_graph(model, uv_map)
+        writer.add_image('original', grid_1, ep)
+        writer.add_image('gt_uv_map', grid_2, ep)
+        writer.add_image('predicted_uv_map', grid_3, ep)
+        writer.add_graph(model, uv_map)
 
         if ep % FLAGS["save_interval"] == 0:
             with torch.no_grad():
@@ -130,7 +132,7 @@ def main(data_dir):
 
                 origin_in = origin.unsqueeze_(0).cuda()
                 pred_uv_map = model(origin_in).detach().cpu()
-
+                
                 save_image([origin.cpu(), gt_uv_map.unsqueeze_(0).cpu(), pred_uv_map],
                            os.path.join(FLAGS['images'], str(ep) + '.png'), nrow=1, normalize=True)
 
@@ -141,6 +143,10 @@ def main(data_dir):
                 'start_epoch': ep,
             }
             torch.save(state, os.path.join(FLAGS['images'], 'latest.pth'))
+
+            command = "python3 inference.py -i TestImages -o TestResults/ep{} --model results/latest.pth --gpu 0".format(ep)
+            os.system(command)
+            print("saved inferences for ep ", ep)
 
             scheduler.step()
 

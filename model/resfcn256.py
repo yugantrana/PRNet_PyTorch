@@ -13,7 +13,9 @@ import torch.nn.functional as F
 from torchvision.models import *
 
 import numpy as np
-
+from . import custom_mobilenet as mb
+from . import all_resnet as rsnt
+import pdb
 
 def conv3x3(in_planes, out_planes, stride=1, dilation=1, padding='same'):
     """3x3 convolution with padding"""
@@ -70,17 +72,23 @@ class ResFCN256(nn.Module):
         self.size = size
 
         # Encoder
-        self.block0 = conv3x3(in_planes=3, out_planes=self.size, padding='same')
-        self.block1 = ResBlock(inplanes=self.size, planes=self.size * 2, stride=2)
-        self.block2 = ResBlock(inplanes=self.size * 2, planes=self.size * 2, stride=1)
-        self.block3 = ResBlock(inplanes=self.size * 2, planes=self.size * 4, stride=2)
-        self.block4 = ResBlock(inplanes=self.size * 4, planes=self.size * 4, stride=1)
-        self.block5 = ResBlock(inplanes=self.size * 4, planes=self.size * 8, stride=2)
-        self.block6 = ResBlock(inplanes=self.size * 8, planes=self.size * 8, stride=1)
-        self.block7 = ResBlock(inplanes=self.size * 8, planes=self.size * 16, stride=2)
-        self.block8 = ResBlock(inplanes=self.size * 16, planes=self.size * 16, stride=1)
-        self.block9 = ResBlock(inplanes=self.size * 16, planes=self.size * 32, stride=2)
-        self.block10 = ResBlock(inplanes=self.size * 32, planes=self.size * 32, stride=1)
+        model = rsnt.resnet18(pretrained=False)
+        self.encoder  = torch.nn.Sequential(*(list(model.children())[:-2]))
+       
+        #self.encoder = mb.mobilenet_v2(pretrained=False)
+
+        #self.encoder = mobilenet_v2(pretrained=False)
+        # self.block0 = conv3x3(in_planes=3, out_planes=self.size, padding='same')
+        # self.block1 = ResBlock(inplanes=self.size, planes=self.size * 2, stride=2)
+        # self.block2 = ResBlock(inplanes=self.size * 2, planes=self.size * 2, stride=1)
+        # self.block3 = ResBlock(inplanes=self.size * 2, planes=self.size * 4, stride=2)
+        # self.block4 = ResBlock(inplanes=self.size * 4, planes=self.size * 4, stride=1)
+        # self.block5 = ResBlock(inplanes=self.size * 4, planes=self.size * 8, stride=2)
+        # self.block6 = ResBlock(inplanes=self.size * 8, planes=self.size * 8, stride=1)
+        # self.block7 = ResBlock(inplanes=self.size * 8, planes=self.size * 16, stride=2)
+        # self.block8 = ResBlock(inplanes=self.size * 16, planes=self.size * 16, stride=1)
+        # self.block9 = ResBlock(inplanes=self.size * 16, planes=self.size * 32, stride=2)
+        # self.block10 = ResBlock(inplanes=self.size * 32, planes=self.size * 32, stride=1)
 
         # Decoder
         self.upsample0 = nn.ConvTranspose2d(self.size * 32, self.size * 32, kernel_size=3, stride=1,
@@ -127,17 +135,20 @@ class ResFCN256(nn.Module):
         self.sigmoid = nn.Sigmoid()
 
     def forward(self, x):
-        se = self.block0(x)  # 256 x 256 x 16
-        se = self.block1(se)  # 128 x 128 x 32
-        se = self.block2(se)  # 128 x 128 x 32
-        se = self.block3(se)  # 64 x 64 x 64
-        se = self.block4(se)  # 64 x 64 x 64
-        se = self.block5(se)  # 32 x 32 x 128
-        se = self.block6(se)  # 32 x 32 x 128
-        se = self.block7(se)  # 16 x 16 x 256
-        se = self.block8(se)  # 16 x 16 x 256
-        se = self.block9(se)  # 8 x 8 x 512
-        se = self.block10(se)  # 8 x 8 x 512
+        # pdb.set_trace()
+        # se = self.encoder.features(x)
+        se = self.encoder(x)
+        # se = self.block0(x)  # 256 x 256 x 16
+        # se = self.block1(se)  # 128 x 128 x 32
+        # se = self.block2(se)  # 128 x 128 x 32
+        # se = self.block3(se)  # 64 x 64 x 64
+        # se = self.block4(se)  # 64 x 64 x 64
+        # se = self.block5(se)  # 32 x 32 x 128
+        # se = self.block6(se)  # 32 x 32 x 128
+        # se = self.block7(se)  # 16 x 16 x 256
+        # se = self.block8(se)  # 16 x 16 x 256
+        # se = self.block9(se)  # 8 x 8 x 512
+        # se = self.block10(se)  # 8 x 8 x 512
 
         pd = self.upsample0(se)  # 8 x 8 x 512
         pd = self.upsample1(pd)  # 16 x 16 x 256
@@ -159,4 +170,5 @@ class ResFCN256(nn.Module):
         pos = self.upsample16(pd)  # 256 x 256 x 3
 
         pos = self.sigmoid(pos)
+        # pdb.set_trace()
         return pos

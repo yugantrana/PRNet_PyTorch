@@ -144,7 +144,7 @@ def main(data_dir):
             }
             torch.save(state, os.path.join(FLAGS['images'], 'latest.pth'))
 
-            command = "python3 inference.py -i TestImages -o TestResults/ep{} --model results/latest.pth --gpu 0".format(ep)
+            command = "python3 inference.py -i TestImages -o r18results/ep{} --model r18results/latest.pth --gpu 0".format(ep)
             os.system(command)
             print("saved inferences for ep ", ep)
 

@@ -64,7 +64,7 @@ class ResBlock(nn.Module):
 
 
 class ResFCN256(nn.Module):
-    def __init__(self, resolution_input=256, resolution_output=256, channel=3, size=16):
+    def __init__(self, resolution_input=256, resolution_output=256, channel=3, size=40):
         super().__init__()
         self.input_resolution = resolution_input
         self.output_resolution = resolution_output
@@ -72,10 +72,10 @@ class ResFCN256(nn.Module):
         self.size = size
 
         # Encoder
-        model = rsnt.resnet18(pretrained=False)
-        self.encoder  = torch.nn.Sequential(*(list(model.children())[:-2]))
+        # model = rsnt.resnet18(pretrained=False)
+        # self.encoder  = torch.nn.Sequential(*(list(model.children())[:-2]))
        
-        #self.encoder = mb.mobilenet_v2(pretrained=False)
+        self.encoder = mb.mobilenet_v2(pretrained=False)
 
         #self.encoder = mobilenet_v2(pretrained=False)
         # self.block0 = conv3x3(in_planes=3, out_planes=self.size, padding='same')
@@ -136,8 +136,8 @@ class ResFCN256(nn.Module):
 
     def forward(self, x):
         # pdb.set_trace()
-        # se = self.encoder.features(x)
-        se = self.encoder(x)
+        se = self.encoder.features(x)
+        # se = self.encoder(x)
         # se = self.block0(x)  # 256 x 256 x 16
         # se = self.block1(se)  # 128 x 128 x 32
         # se = self.block2(se)  # 128 x 128 x 32
